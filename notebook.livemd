@@ -1,0 +1,94 @@
+# Secretary Problem
+
+## Code
+
+```elixir
+defmodule SecretaryProblem do
+  @moduledoc """
+  https://en.wikipedia.org/wiki/Secretary_problem
+  This module represents the fictituous problem of hiring
+  a secretary. The scenario demonstrates the optimal stopping
+  problem.
+  The rules are:
+  You may interview each candidate once. After which, you must
+  decide to hire them or not hire them. You cannot decide later.
+  The goal is to hire the best possible candidate as often as possible.
+  """
+
+  @e 2.71828
+  @target 1 / @e
+
+  @doc """
+  Run simulations of interviewing candidates.
+  """
+  def sample(candidates, tries) do
+    Enum.map(1..tries, fn _try -> shuffle_and_select(candidates) end)
+  end
+
+  @doc """
+  Find the average rank of the candidates you selected from simulations.
+  """
+  def average_rank(results) do
+    Enum.sum(results) / length(results)
+  end
+
+  @doc """
+  Determine what percent of the time you selected the best candidate.
+  You might be surprised to find out the probability of selecting the
+  best candidate converges toward 1 / e ≈ 0.368
+  """
+  def percent_of_best_candidate(candidates, results) do
+    best_result = Enum.max(candidates)
+    count_of_best_hires = Enum.count(results, fn r -> r == best_result end)
+    count_of_best_hires / length(results) * 100
+  end
+
+  # Put the candidates in a random order,
+  # reject the first n candidates,
+  # then compare the remaining candidates to the ones rejected
+  # and select the first candidate that exceeds the ranking of
+  # the highest ranking rejected candidate.
+  defp shuffle_and_select(candidates) do
+    randomized_candidates = Enum.shuffle(candidates)
+
+    {rejected_candidates, remaining_candidates} =
+      Enum.split(randomized_candidates, target_in_set(candidates))
+
+    baseline = Enum.max(rejected_candidates)
+
+    select_or_skip(remaining_candidates, baseline)
+  end
+
+  # walk the remaining cadidates until finding one that is better than
+  # the best rejected candidate. If you get to the last candidate, select
+  # that one regardless of ranking.
+  defp select_or_skip([h | []], _baseline), do: h
+  defp select_or_skip([h | _t], baseline) when h > baseline, do: h
+  defp select_or_skip([_h | t], baseline), do: select_or_skip(t, baseline)
+
+  # This represents the division at the optimal point of 36.8%
+  defp target_in_set(set) do
+    set
+    |> length()
+    |> Kernel.*(@target)
+    |> Float.round()
+    |> Kernel.trunc()
+  end
+end
+```
+
+```elixir
+candidates = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+```
+
+```elixir
+results = SecretaryProblem.sample(candidates, 10000)
+```
+
+```elixir
+SecretaryProblem.percent_of_best_candidate(candidates, results)
+```
+
+```elixir
+SecretaryProblem.average_rank(results)
+```
